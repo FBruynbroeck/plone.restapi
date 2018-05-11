@@ -10,6 +10,7 @@ from zope.component import queryUtility
 from zope.interface import implementer
 from zope.intid.interfaces import IIntIds
 from zope.publisher.interfaces.browser import IBrowserRequest
+from plone import api
 
 
 @implementer(IFieldDeserializer)
@@ -22,7 +23,16 @@ class RelationChoiceFieldDeserializer(DefaultFieldDeserializer):
         if isinstance(value, dict):
             # We are trying to deserialize the output of a serialization
             # which is enhanced, extract it and put it on the loop again
-            value = value['@id']
+            if value.get('@type'):
+                catalog = getToolByName(self.context, 'portal_catalog')
+                brains = catalog(portal_type=value.get(
+                    '@type'), title=value.get('title'))
+                brain = [i for i in brains if i.getObject().title ==
+                         value.get('title')]
+                if brain:
+                    obj = brain[0].getObject()
+            else:
+                value = value['@id']
 
         if isinstance(value, int):
             # Resolve by intid
